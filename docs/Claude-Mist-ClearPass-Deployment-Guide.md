@@ -30,6 +30,24 @@
 
 ---
 
+## Before you begin — Claude Desktop and Cowork
+
+This workflow runs in **Cowork**, so install the app first and know which mode you are in.
+
+**1. Install Claude Desktop and sign in.** Download the Claude desktop app from <https://claude.com/download> (Windows or Mac), install it, and sign in. Cowork requires a **paid Claude plan** and is a **research preview** rolling out gradually, so it may not appear for every eligible account immediately.
+
+**2. Know the three ways to use Claude — this guide uses Cowork:**
+
+| | What it is | Used here? |
+|---|---|---|
+| **Claude Chat** | The normal conversational assistant (web / mobile / desktop) — questions, writing, analysis. Does not touch your files or run tools. | No |
+| **Cowork** | An agentic mode **in the desktop app** that works on your computer: reads/writes files in folders you connect, runs local tools via MCP, drives a browser, completes multi-step tasks. | **Yes — this guide** |
+| **Claude Code** | A command-line tool for developers to delegate coding from the terminal. | No |
+
+In **Cowork** you will create a **project**, connect the NAC-Starter folder to it, register the local executor (the `nac-executor` MCP), and Claude acts as the operator that runs the kit. Everything in §1.2–§1.3 below is done in the Claude **desktop app**.
+
+---
+
 # PHASE 1 — Claude + Juniper Mist
 
 ## 1.1 What you're building
@@ -76,7 +94,11 @@ echo "server: $PWD/mcp-server/server.py"
 ```
 (Note your username with `whoami`; the paths look like `/home/<username>/NAC-Starter/mcp-server/...`.)
 
-**A3 · Claude Desktop config** (Settings → Developer → Edit Config), replacing the paths and distro:
+**A3 · Claude Desktop config.** In the Claude desktop app open **Settings → Developer → Edit
+Config** — that button opens (and creates, if it does not exist yet) the config file
+`claude_desktop_config.json` (on Windows it lives at `%APPDATA%\\Claude\\claude_desktop_config.json`).
+There is no separate installer — you just edit this JSON file. Paste this block, replacing the two
+paths and the distro name:
 ```json
 {
   "mcpServers": {
@@ -109,8 +131,10 @@ python setup.py
 (Resolve-Path mcp-server\server.py).Path
 ```
 
-**B2 · Claude Desktop config** — use the two paths from `Resolve-Path` above (JSON needs **double**
-backslashes):
+**B2 · Claude Desktop config.** Open the same config file — in the Claude desktop app,
+**Settings → Developer → Edit Config** opens (and creates if needed)
+`claude_desktop_config.json` (`%APPDATA%\\Claude\\` on Windows). Paste this block, using the two
+paths from `Resolve-Path` above (JSON needs **double** backslashes):
 ```json
 {
   "mcpServers": {
@@ -133,7 +157,7 @@ it talks to Claude over **stdio** — no ports, no service.
 
 ## 1.3 Create the Claude project
 
-1. New project in Claude Desktop → name it e.g. **"Mist Automation"**.
+1. In the Claude desktop app (Cowork), create a **new project** and name it e.g. **"Mist Automation"**.
 2. **Connect the folder** = your `NAC-Starter` checkout — the WSL path
    `\\wsl$\Ubuntu\home\<username>\NAC-Starter` (Option A) or `C:\Users\<you>\NAC-Starter` (Option B).
 3. Paste the **Instructions block** (Appendix A) into the project's custom instructions.
