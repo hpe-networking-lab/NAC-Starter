@@ -147,12 +147,21 @@ where to find it, validates it live, and writes `inventory/credentials.yml`. **O
 are required to be operational: the Mist `org_id` and an API token** (ClearPass in Phase 2 is
 optional and the wizard skips it unless you opt in).
 
+**Getting the two values from the Mist portal:**
+
+1. **org_id** — left menu → **Organization > Admin > Settings**; the **Organization ID** is
+   shown on that page (it is also in the dashboard URL after `/org/`).
+2. **API token** — same page (**Organization > Admin > Settings**), scroll to the **API Token**
+   section → **Create Token** → pick an **Access Level** (choose a **read-only** level to test
+   safely) → **Generate** → click **copy** next to the **Key** (it is shown only once) →
+   **Done** → **Save** (top-right of the page).
+
 *Manual alternative:* put the Mist **org_id** and a **scoped API token** in
 `inventory/credentials.yml` (gitignored; scaffold in Appendix B). Verify with a read, e.g. list sites/WLANs via `mist_*` (`search` →
 `get_schema` → `execute`). Secrets rule: scripts read from `credentials.yml`; never hardcode, print,
 or commit — verify a secret's *presence*, not its value.
 
-**Read-only first (recommended).** Create your Mist token under a **read-only role (Observer)** to
+**Read-only first (recommended).** Create your Mist token at a **read-only Access Level** to
 test safely — all of Phase 1's read / audit / reconcile works with it and it *cannot change
 anything*. When you're ready to push changes (WLAN / template management), mint a **read-write**
 token and re-run `setup.py`. The wizard reports which kind you gave it after it validates.
