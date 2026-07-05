@@ -157,12 +157,18 @@ it talks to Claude over **stdio** — no ports, no service.
 
 ## 1.3 Create the Claude project
 
-1. In the Claude desktop app (Cowork), create a **new project** and name it e.g. **"Mist Automation"**.
-2. **Connect the folder** = your `NAC-Starter` checkout — the WSL path
-   `\\wsl$\Ubuntu\home\<username>\NAC-Starter` (Option A) or `C:\Users\<you>\NAC-Starter` (Option B).
-3. Paste the **Instructions block** (Appendix A) into the project's custom instructions.
-4. Confirm the project's tools: **nac-executor** (from §1.2), the account-level **hpe-networking**
-   MCP (`mist_*`), and **Claude-in-Chrome**. For any browser choice, use the **switch_browser connect popup**.
+Do this in the Claude desktop app, in **Cowork**.
+
+1. Create a **new project** and name it e.g. **"Mist Automation"**.
+2. **Connect the NAC-Starter folder to the project** so Claude can read/write it: use the project's
+   *connect a folder / add files* control and browse to your checkout —
+   `\\wsl$\Ubuntu\home\<username>\NAC-Starter` (Option A / WSL) or `C:\Users\<you>\NAC-Starter`
+   (Option B / native Windows).
+3. Open the project's **custom instructions** and paste the **Instructions block** from Appendix A.
+4. Confirm the project's tools are present: **nac-executor** (the local executor you registered in
+   §1.2), the account-level **hpe-networking** connector (`mist_*`), and **Claude-in-Chrome**. If
+   `nac-executor` is missing, re-check §1.2C and restart the app. For any browser-choice prompt, use
+   the **switch_browser connect popup**.
 
 ## 1.4 Connect Mist
 
@@ -231,21 +237,27 @@ built-in Access Assurance. ClearPass runs as a VM; Claude integrates via `clearp
 
 ## 2.2 Deploy the ClearPass VM
 
-First, install the Phase 2 script dependencies into the executor venv (in WSL, from the repo root):
-`mcp-server/.venv/bin/pip install -r requirements-phase2.txt` (adds pyrad, paramiko, pyVmomi).
+First, install the Phase 2 script dependencies into the executor venv (from the repo root):
+`mcp-server/.venv/bin/pip install -r requirements-phase2.txt` (WSL) or
+`mcp-server\.venv\Scripts\pip install -r requirements-phase2.txt` (native Windows) — adds pyrad,
+paramiko, pyVmomi.
 
-1. **Stage the OVA** — human sources the Policy Manager OVA (entitlement download) onto the hypervisor
-   datastore.
+1. **Stage the OVA** — download the Policy Manager OVA (your Aruba/HPE entitlement) and put it on the
+   hypervisor datastore.
 2. **Register + power on** — on a **free-licensed** hypervisor `ovftool`/`govc`/pyVmomi can't deploy;
-   use `scripts/deploy_clearpass_ova.py --ova "<path>" --dry-run` then `--commit --poweron` (SSH +
-   `vim-cmd`), or the hypervisor **web client**.
-3. **First-boot** (console, GUI-only): passwords, mgmt IP/DNS, hostname, **make it a Publisher**,
-   licenses, **NTP**.
-4. **Enable Insight** — the session/CoA REST API used for validation depends on it.
-5. **Create the REST API client** (GUI-only): **Guest > Administration > API Services > API Clients**
-   → Client ID `cowork-lab-automation`, grant **Client Credentials**. Store the secret with
-   `scripts/set_clearpass_api_secret.py`.
-6. **Snapshot** the VM (`scripts/snapshot_esxi.py`) before policy work.
+   run `scripts/deploy_clearpass_ova.py --ova "<datastore path>" --dry-run`, then re-run with
+   `--commit --poweron`; or deploy via the hypervisor's **web client**.
+3. **First-boot setup (VM console):** the appliance wizard asks for the admin + appadmin passwords,
+   hostname, management IP/DNS, and NTP. A standalone node is the cluster **Publisher** automatically
+   (Publisher vs subscriber only matters if you later add nodes). Apply platform licences in the GUI:
+   **Administration → Server Manager → Licensing**.
+4. **Enable Insight** (the session/CoA REST API depends on it): **Administration → Server Manager →
+   Server Configuration →** click your node **→ System** tab **→** tick **Enable Insight → Save**.
+5. **Create the REST API client** (GUI): **Guest → Administration → API Services → API Clients →
+   Create API Client** → Client ID `cowork-lab-automation`, Grant type **Client Credentials**, an
+   operator profile with the access you need → **Create**. Store the secret with
+   `scripts/set_clearpass_api_secret.py` (it prompts hidden — never paste it in chat).
+6. **Snapshot** the VM (`scripts/snapshot_esxi.py`) before policy work, so you can revert.
 
 ## 2.3 Connect Claude to ClearPass
 
@@ -254,21 +266,25 @@ respond and verify the API client with `backup_clearpass.py --max-events 10` (`s
 
 ## 2.4 Integrate Mist ↔ ClearPass
 
-- **Mist side** (`mist_*` / `manage_mist_wlan.py`): point the WLAN's RADIUS auth+acct servers at the
-  ClearPass IP with a shared secret; **enable CoA / Dynamic Authorization** on the WLAN so Mist accepts
-  inbound CoA on udp/3799. Use a site/org variable for the ClearPass IP.
-- **Ports:** 1812/1813 (auth/acct) and **3799 (CoA)** open both ways.
-- **Message-Authenticator:** modern ClearPass requires it (Blast-RADIUS hardening) — don't disable it.
+- **Mist side** — in the guest WLAN's **RADIUS** settings (Mist portal → the WLAN, or its template),
+  set the **authentication and accounting servers** to the ClearPass IP with the shared secret, and
+  **enable CoA / Dynamic Authorization** so the AP accepts inbound CoA on udp/3799. Use a site/org
+  **variable** for the ClearPass IP, not a literal. (`manage_mist_wlan.py` can do this via the API.)
+- **Ports:** udp 1812/1813 (auth/acct) and **3799 (CoA)** open both ways between the AP and ClearPass.
+- **Message-Authenticator:** modern ClearPass requires it (Blast-RADIUS hardening) — leave it on.
 
 ## 2.5 Guest onboarding + CoA — the Juniper method
 
-1. **Register the Mist AP as a Network Device (NAD):** its NAS IP + shared secret; enable CoA
-   (`coa_capable`, `coa_port 3799`); **Vendor = Juniper** (its real vendor — no Cisco).
-2. **Guest re-auth is delivered as a Disconnect.** On the guest WEBAUTH enforcement policy's `[Guest]`
-   rule, use **`[Juniper Terminate Session]`** (attributes: `Calling-Station-Id`, `Acct-Session-Id`)
-   alongside the MAC-caching profile. On successful guest login, ClearPass sends a **Disconnect-Request
-   (code 40)** to the AP on udp/3799; the client briefly re-associates and lands in its
-   post-registration role.
+1. **Register the Mist AP as a Network Device (NAD)** — ClearPass GUI: **Configuration → Network →
+   Devices → Add**. Set a **Name**, the AP's **IP Address**, the **RADIUS Shared Secret** (matching
+   Mist), **Vendor Name = Juniper**, and tick **Enable RADIUS CoA** (RADIUS CoA Port **3799**). Save.
+2. **Deliver guest re-auth as a Disconnect.** ClearPass ships a built-in **`[Juniper Terminate
+   Session]`** profile — you don't build it. Add it to the guest WEBAUTH enforcement policy's
+   `[Guest]` rule: **Configuration → Enforcement → Policies →** open the guest WEBAUTH policy **→**
+   edit the `[Guest]` rule **→** add **`[Juniper Terminate Session]`** to the enforcement profiles
+   (alongside the MAC-caching profile) **→ Save**. On a successful guest login ClearPass sends a
+   **Disconnect-Request (code 40)** to the AP on udp/3799; the client briefly re-associates and lands
+   in its post-registration role.
 3. **Wire-proven (lab, 2026-07-05):** NAD **Vendor=Juniper** + `[Juniper Terminate Session]` + a real
    guest self-registration/login produced a **Disconnect-Request (code 40) on udp/3799** from ClearPass.
 
