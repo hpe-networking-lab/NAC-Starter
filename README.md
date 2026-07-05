@@ -9,6 +9,8 @@ Run the setup wizard. It asks for each value, tells you **where to find it**, **
 (tests your Mist token, and ClearPass if you add it), and writes `inventory/credentials.yml` for you:
 
 ```
+git clone https://github.com/hpe-networking-lab/NAC-Starter.git
+cd NAC-Starter
 python3 setup.py
 ```
 

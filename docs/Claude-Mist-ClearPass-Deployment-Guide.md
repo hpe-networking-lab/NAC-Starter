@@ -56,21 +56,12 @@ as the source of intent.
 1. Install WSL2 + Ubuntu: `wsl --install -d Ubuntu` (Windows 11). *(Mirrored networking is only
    needed in Phase 2 — see §2.1 — so you can skip it for Mist-only work.)*
 2. Install Python deps: `pip install pyyaml requests` (add `pyrad paramiko pyVmomi` for Phase 2).
-3. **Clone the repo locally.** `<github-url>` is a placeholder — use the clone URL of your
-   **lab-version-control** repo (GitHub → the green **Code** button → HTTPS or SSH URL, e.g.
-   `git@github.com:<your-org>/lab-version-control.git`):
-   `git clone <that-url> ~/lab/lab-version-control`. This repo is your **source of truth**
-   (scripts, inventory, credentials scaffold). *Prerequisite:* the repo must already exist — for a
-   brand-new deployment with none yet, create an empty private repo first (or `git init` locally
-   and push it), then clone.
-   *Private repo — authenticate first:* the repo is private, so cloning needs auth — either an
-   **SSH key** on this machine tied to a GitHub account with access, or **HTTPS + a Personal
-   Access Token**. On a locked-down/work network prefer **HTTPS (443) + PAT** (SSH port 22 is
-   often blocked). Cloning exposes no secrets — `credentials.yml` is gitignored and populated
-   locally.
-   *Getting access:* the repo stays **private**; the owner grants read access — add you as a
-   **read-only collaborator** (or to a team), or install a **read-only deploy key** for a single
-   machine (best for a locked-down work PC: repo-scoped, no personal account/PAT needed).
+3. **Get this kit onto the PC.** If you haven't already, clone it — it's public, so no account or
+   key is needed:
+   `git clone https://github.com/hpe-networking-lab/NAC-Starter.git` then `cd NAC-Starter`.
+   This folder is your working copy and **source of truth** (scripts, inventory scaffold, docs).
+   *Optional:* to keep your own version history, create a private repo of your own and push this to
+   it — but you don't need to in order to get started.
 4. Run the **local executor MCP** here (the ubuntu-utility MCP, hosted in WSL on your PC), pointed at
    the local repo.
 
