@@ -1,0 +1,22 @@
+# NEVER commit real secrets
+inventory/credentials.yml
+*.env
+.env
+.env.*
+*secrets*
+*.key
+*.pem
+*.p12
+*.pfx
+*_id_rsa
+*_id_ed25519
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+# os / editor
+.DS_Store
+Thumbs.db
+.vscode/
+*.swp
