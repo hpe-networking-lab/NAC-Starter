@@ -187,6 +187,9 @@ built-in Access Assurance. ClearPass runs as a VM; Claude integrates via `clearp
 
 ## 2.2 Deploy the ClearPass VM
 
+First, install the Phase 2 script dependencies into the executor venv (in WSL, from the repo root):
+`mcp-server/.venv/bin/pip install -r requirements-phase2.txt` (adds pyrad, paramiko, pyVmomi).
+
 1. **Stage the OVA** — human sources the Policy Manager OVA (entitlement download) onto the hypervisor
    datastore.
 2. **Register + power on** — on a **free-licensed** hypervisor `ovftool`/`govc`/pyVmomi can't deploy;
