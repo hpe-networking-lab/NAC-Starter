@@ -1,0 +1,4 @@
+# Phase 2 (ClearPass) additional script dependencies
+pyrad>=2.4
+paramiko>=3.0
+pyVmomi>=8.0

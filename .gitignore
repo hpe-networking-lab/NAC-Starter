@@ -20,3 +20,7 @@ venv/
 Thumbs.db
 .vscode/
 *.swp
+
+# executor MCP
+.executor-mcp.log
+mcp-server/.venv/

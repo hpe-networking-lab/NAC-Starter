@@ -49,29 +49,85 @@ Mist is a cloud service, so Phase 1 needs only internet — the PC does not have
 The project's job: read and reconcile Mist config, manage WLANs/templates safely, and keep the repo
 as the source of intent.
 
-## 1.2 Stand up the local executor on the PC
+## 1.2 Set up the machine + the local executor
 
-**Recommended: WSL2 (Ubuntu), or native Windows + Python.**
+You'll work in three places — **PowerShell** (Windows), the **Ubuntu (WSL) terminal**, and
+**Claude Desktop** — in that order. Copy-paste each block.
 
-1. Install WSL2 + Ubuntu: `wsl --install -d Ubuntu` (Windows 11). *(Mirrored networking is only
-   needed in Phase 2 — see §2.1 — so you can skip it for Mist-only work.)*
-2. Install Python deps: `pip install pyyaml requests` (add `pyrad paramiko pyVmomi` for Phase 2).
-3. **Get this kit onto the PC.** If you haven't already, clone it — it's public, so no account or
-   key is needed:
-   `git clone https://github.com/hpe-networking-lab/NAC-Starter.git` then `cd NAC-Starter`.
-   This folder is your working copy and **source of truth** (scripts, inventory scaffold, docs).
-   *Optional:* to keep your own version history, create a private repo of your own and push this to
-   it — but you don't need to in order to get started.
-4. Run the **local executor MCP** here (the ubuntu-utility MCP, hosted in WSL on your PC), pointed at
-   the local repo.
+### A) PowerShell (Windows) — install WSL + Ubuntu
+
+```powershell
+wsl --install -d Ubuntu
+```
+
+Restart Windows if prompted, then open **Ubuntu** from the Start menu and set a username + password
+when asked. (Already have WSL? Just open Ubuntu.) *For Phase 2's CoA test you'll also turn on WSL
+mirrored networking — see §2.1; skip it for Mist-only work.*
+
+### B) Ubuntu (WSL) terminal — get the kit and build the executor
+
+```bash
+sudo apt update && sudo apt install -y python3-venv git
+git clone https://github.com/hpe-networking-lab/NAC-Starter.git
+cd NAC-Starter
+python3 -m venv mcp-server/.venv
+mcp-server/.venv/bin/pip install -r mcp-server/requirements.txt -r requirements.txt
+```
+
+Run the guided wizard to fill in your Mist credentials (it explains each value — see §1.4):
+
+```bash
+python3 setup.py
+```
+
+Print the two paths you'll paste into Claude Desktop next (and note your username with `whoami`):
+
+```bash
+echo "python: $PWD/mcp-server/.venv/bin/python"
+echo "server: $PWD/mcp-server/server.py"
+```
+
+They look like `/home/<username>/NAC-Starter/mcp-server/...`.
+
+### C) Claude Desktop — register the executor
+
+Open **Settings → Developer → Edit Config** (this opens `claude_desktop_config.json`). Add the
+`nac-executor` block, merging it into any existing `mcpServers`. Replace the two paths with what you
+printed above, and `Ubuntu` with your distro name if different:
+
+```json
+{
+  "mcpServers": {
+    "nac-executor": {
+      "command": "wsl.exe",
+      "args": [
+        "-d", "Ubuntu",
+        "/home/<username>/NAC-Starter/mcp-server/.venv/bin/python",
+        "/home/<username>/NAC-Starter/mcp-server/server.py"
+      ]
+    }
+  }
+}
+```
+
+Save, then **fully quit and reopen Claude Desktop**. Under **Settings → Developer** you should see
+**nac-executor** connected, exposing `list_directory`, `read_file`, `write_file`, `run_command`,
+`run_script`, `git_status`, `git_commit`. It is confined to the NAC-Starter folder and blocks
+destructive commands (see `mcp-server/README.md`); it talks to Claude over **stdio** — no ports, no
+service, no firewall.
+
+*(No-WSL alternative: install Python for Windows, create the venv with it, and set `command` to that
+`python.exe` with the Windows path to `server.py`. WSL is recommended, and Phase 2's CoA test needs it.)*
 
 ## 1.3 Create the Claude project
 
 1. New project in Claude Desktop → name it e.g. **"Mist Automation"**.
-2. **Connect the folder** = the local repo clone from §1.2.
+2. **Connect the folder** = your `NAC-Starter` checkout. In the folder picker, browse to the WSL path
+   under **Linux > Ubuntu > home > your-username > NAC-Starter** (or type
+   `\\wsl$\Ubuntu\home\<username>\NAC-Starter`).
 3. Paste the **Instructions block** (Appendix A) into the project's custom instructions.
-4. Confirm the MCP servers: the **local executor MCP**, the account-level **hpe-networking** MCP
-   (`mist_*`), and **Claude-in-Chrome**. For any browser choice, use the **switch_browser connect popup**.
+4. Confirm the project's tools: **nac-executor** (from §1.2C), the account-level **hpe-networking**
+   MCP (`mist_*`), and **Claude-in-Chrome**. For any browser choice, use the **switch_browser connect popup**.
 
 ## 1.4 Connect Mist
 
